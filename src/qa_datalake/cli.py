@@ -1,0 +1,83 @@
+import argparse
+import json
+from datetime import date
+from pathlib import Path
+
+from qa_datalake.aws_pipeline import AwsPipeline
+from qa_datalake.config import Settings
+from qa_datalake.csv_contract import normalize_export, validate_csv
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="qa-datalake",
+        description="Valida e ingere o contrato de dados Qualidade Ambiental na AWS.",
+    )
+    subcommands = parser.add_subparsers(dest="command", required=True)
+
+    normalize = subcommands.add_parser(
+        "normalize", help="Normaliza uma exportacao SSMS para o contrato CSV."
+    )
+    normalize.add_argument("source", type=Path)
+    normalize.add_argument("target", type=Path)
+    normalize.add_argument("--force", action="store_true")
+
+    validate = subcommands.add_parser("validate", help="Valida o contrato CSV local.")
+    validate.add_argument("csv", type=Path)
+    validate.add_argument("--baseline", action="store_true")
+
+    plan = subcommands.add_parser("plan", help="Mostra o destino S3 sem acessar a AWS.")
+    plan.add_argument("csv", type=Path)
+    plan.add_argument("--ingestion-date", default=date.today().isoformat())
+    plan.add_argument("--baseline", action="store_true")
+
+    ingest = subcommands.add_parser(
+        "ingest", help="Executa validacao, upload, crawler e carga curated."
+    )
+    ingest.add_argument("csv", type=Path)
+    ingest.add_argument("--ingestion-date", default=date.today().isoformat())
+    ingest.add_argument("--baseline", action="store_true")
+    return parser
+
+
+def main() -> None:
+    args = _parser().parse_args()
+
+    if args.command == "normalize":
+        rows = normalize_export(args.source, args.target, overwrite=args.force)
+        print(json.dumps({"target": str(args.target), "rows": rows}, indent=2))
+        return
+
+    if args.command == "validate":
+        summary = validate_csv(args.csv, require_baseline=args.baseline)
+        print(json.dumps(summary.to_dict(), ensure_ascii=False, indent=2))
+        return
+
+    settings = Settings.from_env()
+    summary = validate_csv(args.csv, require_baseline=args.baseline)
+    partition = date.fromisoformat(args.ingestion_date).isoformat()
+
+    if args.command == "plan":
+        key = f"{settings.raw_prefix}/ingestion_date={partition}/{args.csv.name}"
+        print(
+            json.dumps(
+                {
+                    "validation": summary.to_dict(),
+                    "s3_uri": f"s3://{settings.bucket}/{key}",
+                    "crawler": settings.crawler,
+                    "workgroup": settings.workgroup,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return
+
+    pipeline = AwsPipeline.from_settings(settings)
+    result = pipeline.ingest(
+        args.csv,
+        partition,
+        require_baseline=args.baseline,
+    )
+    print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+

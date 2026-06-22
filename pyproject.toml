@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qualidadeambiental-aws-datalake"
+version = "0.1.0"
+description = "Validated batch ingestion from the Qualidade Ambiental data contract into an AWS data lake."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "boto3>=1.35,<2",
+  "python-dotenv>=1.0,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "ruff>=0.8,<1",
+]
+
+[project.scripts]
+qa-datalake = "qa_datalake.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
