@@ -48,10 +48,7 @@ O projeto implementa uma CLI Python que:
 - compara contagens locais, raw e curated antes de concluir a carga;
 - gera a transformação Athena para Parquet com compressão Snappy.
 
-> **Status da v0.1.0:** a fundação AWS e a integração com Power BI foram validadas manualmente de
-> ponta a ponta para a partição `2026-06-22`. O orquestrador Python está implementado e coberto por
-> testes automatizados com clientes AWS simulados. A primeira execução automatizada de um novo lote,
-> usando uma identidade de ingestão dedicada, permanece no roadmap.
+> **Status da v0.2.0:** a fundação AWS e a integração com Power BI permanecem validadas. Em `2026-06-23`, a CLI executou a primeira ingestão incremental automatizada usando uma identidade IAM dedicada. O lote apresentou 12 registros localmente, 12 registros na camada raw e 12 registros na camada curated em Parquet.
 
 ---
 
@@ -206,6 +203,7 @@ Preencha o `.env` somente com nomes de recursos. Não inclua Access Key ID, Secr
 Session Token nesse arquivo.
 
 ```dotenv
+AWS_PROFILE=qa-datalake-ingestion
 QA_AWS_REGION=us-east-1
 QA_S3_BUCKET=replace-with-your-bucket-name
 QA_RAW_PREFIX=raw/dados_conformidade
@@ -281,7 +279,7 @@ python -m unittest discover -s tests -v
 PYTHONPATH=src python -m unittest discover -s tests -v
 ```
 
-A suite atual possui 11 testes para contrato CSV, normalização, SQL Athena, sincronização do
+A suite atual possui 13 testes para contrato CSV, normalização, SQL Athena, sincronização do
 crawler, orquestração simulada e baseline versionado. O mesmo comando é executado pelo GitHub
 Actions em pushes e pull requests.
 
@@ -300,6 +298,9 @@ QualidadeAmbiental_AWS_DataLake/
 ├── docs/
 │   ├── adr/
 │   │   └── 0001-separate-derived-project.md
+│   ├── iam/
+│   │   ├── README.md
+│   │   └── *.template.json
 │   └── runbook.md
 ├── src/
 │   └── qa_datalake/
@@ -351,8 +352,8 @@ para acompanhar a evolução.
 - [x] Normalização de exportacao SSMS
 - [x] Orquestrador Python com proteção contra duplicidade
 - [x] Testes automatizados locais
-- [ ] Identidade IAM dedicada para ingestão Python
-- [ ] Primeira execução automatizada de um novo lote na AWS
+- [x] Identidade IAM dedicada para ingestão Python
+- [x] Primeira execução automatizada de um novo lote na AWS
 - [x] Workflow de CI versionado no repositório
 - [x] Primeira execução bem-sucedida do GitHub Actions
 - [ ] Infraestrutura como código com Terraform ou AWS CDK
@@ -383,7 +384,7 @@ Para bugs ou propostas de evolução, abra uma
 - O SQL Server permanece a fonte oficial da regra de conformidade.
 - Este projeto consome o contrato; ele não recalcula a regra ambiental.
 - Os limites e resultados do dataset são didáticos e não constituem enquadramento legal.
-- Substituição destrutiva de partições permanece fora do escopo da v0.1.0.
+- Substituição destrutiva de partições permanece fora do escopo da v0.2.0.
 - O motivo para manter este projeto separado está documentado no
   [`ADR 0001`](./docs/adr/0001-separate-derived-project.md).
 

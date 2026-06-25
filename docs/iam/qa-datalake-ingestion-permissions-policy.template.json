@@ -1,0 +1,90 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AthenaWorkgroupQueries",
+      "Effect": "Allow",
+      "Action": [
+        "athena:GetWorkGroup",
+        "athena:StartQueryExecution",
+        "athena:GetQueryExecution",
+        "athena:GetQueryResults"
+      ],
+      "Resource": "arn:aws:athena:us-east-1:${AWS_ACCOUNT_ID}:workgroup/qa-qualidade-ambiental-wg"
+    },
+    {
+      "Sid": "GlueCrawlerControl",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetCrawler",
+        "glue:StartCrawler"
+      ],
+      "Resource": "arn:aws:glue:us-east-1:${AWS_ACCOUNT_ID}:crawler/qa-dados-conformidade-raw-crawler"
+    },
+    {
+      "Sid": "GlueCatalogAccess",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetDatabase",
+        "glue:GetDatabases",
+        "glue:GetTable",
+        "glue:GetTables",
+        "glue:GetPartition",
+        "glue:GetPartitions",
+        "glue:BatchGetPartition",
+        "glue:CreatePartition",
+        "glue:BatchCreatePartition",
+        "glue:UpdatePartition"
+      ],
+      "Resource": [
+        "arn:aws:glue:us-east-1:${AWS_ACCOUNT_ID}:catalog",
+        "arn:aws:glue:us-east-1:${AWS_ACCOUNT_ID}:database/qualidade_ambiental_raw",
+        "arn:aws:glue:us-east-1:${AWS_ACCOUNT_ID}:database/qualidade_ambiental_curated",
+        "arn:aws:glue:us-east-1:${AWS_ACCOUNT_ID}:table/qualidade_ambiental_raw/raw_dados_conformidade",
+        "arn:aws:glue:us-east-1:${AWS_ACCOUNT_ID}:table/qualidade_ambiental_curated/dados_conformidade"
+      ]
+    },
+    {
+      "Sid": "S3BucketMetadata",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetBucketLocation",
+        "s3:ListBucketMultipartUploads"
+      ],
+      "Resource": "arn:aws:s3:::${BUCKET_NAME}"
+    },
+    {
+      "Sid": "S3ListProjectPrefixes",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::${BUCKET_NAME}",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "raw/dados_conformidade",
+            "raw/dados_conformidade/*",
+            "curated/dados_conformidade",
+            "curated/dados_conformidade/*",
+            "athena-results",
+            "athena-results/*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "S3ProjectObjects",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:AbortMultipartUpload",
+        "s3:ListMultipartUploadParts"
+      ],
+      "Resource": [
+        "arn:aws:s3:::${BUCKET_NAME}/raw/dados_conformidade/*",
+        "arn:aws:s3:::${BUCKET_NAME}/curated/dados_conformidade/*",
+        "arn:aws:s3:::${BUCKET_NAME}/athena-results/*"
+      ]
+    }
+  ]
+}

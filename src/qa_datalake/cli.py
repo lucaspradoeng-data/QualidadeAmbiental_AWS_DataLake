@@ -1,11 +1,12 @@
 import argparse
 import json
+import sys
 from datetime import date
 from pathlib import Path
 
-from qa_datalake.aws_pipeline import AwsPipeline
+from qa_datalake.aws_pipeline import AwsPipeline, PipelineError
 from qa_datalake.config import Settings
-from qa_datalake.csv_contract import normalize_export, validate_csv
+from qa_datalake.csv_contract import CsvContractError, normalize_export, validate_csv
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -40,7 +41,7 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> None:
+def _run() -> None:
     args = _parser().parse_args()
 
     if args.command == "normalize":
@@ -81,3 +82,10 @@ def main() -> None:
     )
     print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
 
+
+def main() -> None:
+    try:
+        _run()
+    except (CsvContractError, FileNotFoundError, PipelineError, ValueError) as exc:
+        print(f"Erro: {exc}", file=sys.stderr)
+        raise SystemExit(1) from None
