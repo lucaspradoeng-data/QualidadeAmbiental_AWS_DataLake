@@ -65,6 +65,15 @@ class FakeAthena:
         }
 
 
+class FakeSts:
+    def get_caller_identity(self) -> dict:
+        return {
+            "Account": "123456789012",
+            "Arn": "arn:aws:sts::123456789012:assumed-role/role/session",
+            "UserId": "AROATEST:session",
+        }
+
+
 class AwsPipelineTests(unittest.TestCase):
     @patch("qa_datalake.aws_pipeline.time.sleep", return_value=None)
     def test_crawler_waits_for_current_execution(self, _sleep) -> None:
@@ -116,6 +125,7 @@ class AwsPipelineTests(unittest.TestCase):
             s3_client=s3,
             glue_client=glue,
             athena_client=athena,
+            sts_client=FakeSts(),
         )
 
         with tempfile.TemporaryDirectory() as directory:
@@ -133,6 +143,27 @@ class AwsPipelineTests(unittest.TestCase):
         self.assertEqual(len(s3.uploads), 1)
         self.assertEqual(len(athena.queries), 4)
         self.assertIn("INSERT INTO", athena.queries[2][0])
+        self.assertEqual(result.manifest["pipeline_version"], "0.3.0")
+        self.assertEqual(result.manifest["status"], "success")
+        self.assertEqual(result.manifest["ingestion_date"], "2026-07-01")
+        self.assertEqual(result.manifest["source_file"].endswith("batch.csv"), True)
+        self.assertEqual(len(result.manifest["source_sha256"]), 64)
+        self.assertEqual(result.manifest["raw_rows"], 1)
+        self.assertEqual(result.manifest["curated_rows"], 1)
+        self.assertEqual(
+            result.manifest["athena_query_execution_ids"],
+            {
+                "curated_precheck": "q1",
+                "raw_count": "q2",
+                "insert_curated": "q3",
+                "curated_count": "q4",
+            },
+        )
+        self.assertEqual(
+            result.manifest["aws_identity"]["arn"],
+            "arn:aws:sts::123456789012:assumed-role/role/session",
+        )
+        self.assertIn("upload_raw", result.manifest["timings_seconds"])
 
 
 if __name__ == "__main__":

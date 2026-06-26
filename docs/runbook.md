@@ -104,6 +104,23 @@ Run one new batch:
 qa-datalake ingest data/output/dados_conformidade.csv --ingestion-date 2026-07-01
 ```
 
+By default, a successful ingestion writes an operational manifest to:
+
+```text
+artifacts/manifests/
+```
+
+To choose another local destination:
+
+```bash
+qa-datalake ingest data/output/dados_conformidade.csv --ingestion-date 2026-07-01 --manifest-dir run-evidence
+```
+
+The manifest records the ingestion date, source path, SHA256 checksum, S3 URI, validation
+summary, raw and curated counts, Athena query execution IDs, AWS caller identity, stage
+timings, start time, finish time, and total duration. Keep manifests out of Git because
+they are local execution evidence.
+
 The pipeline fails closed when the raw or curated partition already exists. It does not
 overwrite a partition and does not offer a force flag for cloud writes.
 
@@ -131,6 +148,8 @@ partitions, and the curated table uses `MapredParquetInputFormat` with `ParquetH
 - Athena insert failure: inspect the query and S3 destination before retrying because Athena
   can leave orphaned files after failed writes.
 - Curated count mismatch: stop Power BI refresh and investigate before another ingestion.
+- Missing manifest: confirm the command finished successfully and that the local process has
+  permission to write under `artifacts/manifests` or the directory passed by `--manifest-dir`.
 
 ## Cost controls
 

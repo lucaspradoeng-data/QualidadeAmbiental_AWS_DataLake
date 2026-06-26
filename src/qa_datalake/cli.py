@@ -7,6 +7,7 @@ from pathlib import Path
 from qa_datalake.aws_pipeline import AwsPipeline, PipelineError
 from qa_datalake.config import Settings
 from qa_datalake.csv_contract import CsvContractError, normalize_export, validate_csv
+from qa_datalake.manifest import write_manifest
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -38,6 +39,12 @@ def _parser() -> argparse.ArgumentParser:
     ingest.add_argument("csv", type=Path)
     ingest.add_argument("--ingestion-date", default=date.today().isoformat())
     ingest.add_argument("--baseline", action="store_true")
+    ingest.add_argument(
+        "--manifest-dir",
+        type=Path,
+        default=Path("artifacts/manifests"),
+        help="Diretorio local onde o manifesto operacional sera gravado.",
+    )
     return parser
 
 
@@ -80,7 +87,10 @@ def _run() -> None:
         partition,
         require_baseline=args.baseline,
     )
-    print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+    manifest_path = write_manifest(result.manifest, args.manifest_dir)
+    output = result.to_dict()
+    output["manifest_path"] = str(manifest_path)
+    print(json.dumps(output, ensure_ascii=False, indent=2))
 
 
 def main() -> None:

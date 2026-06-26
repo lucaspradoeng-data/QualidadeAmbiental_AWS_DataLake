@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qualidadeambiental-aws-datalake"
-version = "0.2.0"
+version = "0.3.0"
 description = "Validated batch ingestion from the Qualidade Ambiental data contract into an AWS data lake."
 readme = "README.md"
 requires-python = ">=3.11"

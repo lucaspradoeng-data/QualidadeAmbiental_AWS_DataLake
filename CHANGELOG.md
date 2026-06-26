@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.0] - 2026-06-26
+
+### Added
+
+- Operational ingestion manifest written locally after successful `ingest` runs.
+- SHA256 checksum for the source CSV loaded into S3 raw.
+- Timings for the main ingestion stages.
+- Athena `QueryExecutionId` tracking for count checks and curated insert.
+- AWS caller identity capture through STS when available.
+- Unit tests for manifest creation and pipeline evidence.
+
+### Changed
+
+- `ingest` output now includes `manifest_path` and an embedded operational manifest.
+- Local generated manifests are ignored by Git through the `artifacts/` directory.
+- Project package version bumped to `0.3.0`.
+
 ## [0.2.0] - 2026-06-23
 
 ### Added
