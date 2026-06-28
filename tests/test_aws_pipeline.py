@@ -32,6 +32,7 @@ class FakeGlue:
 class FakeS3:
     def __init__(self) -> None:
         self.uploads = []
+        self.puts = []
 
     def list_objects_v2(self, **kwargs) -> dict:
         self.list_request = kwargs
@@ -39,6 +40,10 @@ class FakeS3:
 
     def upload_file(self, *args, **kwargs) -> None:
         self.uploads.append((args, kwargs))
+
+    def put_object(self, **kwargs) -> dict:
+        self.puts.append(kwargs)
+        return {"ETag": '"manifest"'}
 
 
 class FakeAthena:
@@ -81,6 +86,7 @@ class AwsPipelineTests(unittest.TestCase):
             region="us-east-1",
             bucket="bucket",
             raw_prefix="raw/dados_conformidade",
+            audit_prefix="audit/manifests",
             crawler="crawler",
             workgroup="workgroup",
             raw_database="raw_db",
@@ -108,6 +114,7 @@ class AwsPipelineTests(unittest.TestCase):
             region="us-east-1",
             bucket="bucket",
             raw_prefix="raw/dados_conformidade",
+            audit_prefix="audit/manifests",
             crawler="crawler",
             workgroup="workgroup",
             raw_database="raw_db",
@@ -140,12 +147,27 @@ class AwsPipelineTests(unittest.TestCase):
             result.s3_uri,
             "s3://bucket/raw/dados_conformidade/ingestion_date=2026-07-01/batch.csv",
         )
+        self.assertTrue(
+            result.manifest_s3_uri.startswith(
+                "s3://bucket/audit/manifests/ingestion_date=2026-07-01/ingest_"
+            )
+        )
         self.assertEqual(len(s3.uploads), 1)
+        self.assertEqual(len(s3.puts), 1)
+        self.assertEqual(s3.puts[0]["Bucket"], "bucket")
+        self.assertTrue(
+            s3.puts[0]["Key"].startswith(
+                "audit/manifests/ingestion_date=2026-07-01/ingest_"
+            )
+        )
+        self.assertEqual(s3.puts[0]["ContentType"], "application/json")
+        self.assertEqual(s3.puts[0]["ServerSideEncryption"], "AES256")
         self.assertEqual(len(athena.queries), 4)
         self.assertIn("INSERT INTO", athena.queries[2][0])
-        self.assertEqual(result.manifest["pipeline_version"], "0.3.0")
+        self.assertEqual(result.manifest["pipeline_version"], "0.4.0")
         self.assertEqual(result.manifest["status"], "success")
         self.assertEqual(result.manifest["ingestion_date"], "2026-07-01")
+        self.assertEqual(result.manifest["manifest_s3_uri"], result.manifest_s3_uri)
         self.assertEqual(result.manifest["source_file"].endswith("batch.csv"), True)
         self.assertEqual(len(result.manifest["source_sha256"]), 64)
         self.assertEqual(result.manifest["raw_rows"], 1)
@@ -164,6 +186,7 @@ class AwsPipelineTests(unittest.TestCase):
             "arn:aws:sts::123456789012:assumed-role/role/session",
         )
         self.assertIn("upload_raw", result.manifest["timings_seconds"])
+        self.assertNotIn("upload_audit_manifest", result.manifest["timings_seconds"])
 
 
 if __name__ == "__main__":

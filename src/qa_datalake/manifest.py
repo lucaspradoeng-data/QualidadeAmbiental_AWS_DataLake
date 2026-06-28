@@ -23,11 +23,16 @@ def sha256_file(path: Path) -> str:
 
 def write_manifest(manifest: dict[str, Any], manifest_dir: Path) -> Path:
     manifest_dir.mkdir(parents=True, exist_ok=True)
+    target = manifest_dir / manifest_filename(manifest)
+    target.write_bytes(manifest_json_bytes(manifest))
+    return target
+
+
+def manifest_filename(manifest: dict[str, Any]) -> str:
     ingestion_date = str(manifest["ingestion_date"])
     timestamp = str(manifest["finished_at"]).replace(":", "").replace("-", "")
-    target = manifest_dir / f"ingest_{ingestion_date}_{timestamp}.json"
-    target.write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-    return target
+    return f"ingest_{ingestion_date}_{timestamp}.json"
+
+
+def manifest_json_bytes(manifest: dict[str, Any]) -> bytes:
+    return (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode("utf-8")

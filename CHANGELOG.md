@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.0] - 2026-06-28
+
+### Added
+
+- Cloud audit manifest upload to S3 after successful `ingest` runs.
+- `QA_AUDIT_PREFIX` setting with default `audit/manifests`.
+- `manifest_s3_uri` in pipeline and CLI output.
+- Audit manifest S3 prefix in the least-privilege IAM template.
+
+### Changed
+
+- `plan` now shows the expected audit manifest S3 URI pattern.
+- Project package version bumped to `0.4.0`.
+
 ## [0.3.0] - 2026-06-26
 
 ### Added

@@ -7,7 +7,13 @@ from typing import Any
 from qa_datalake.athena_sql import count_partition_sql, insert_curated_sql
 from qa_datalake.config import Settings
 from qa_datalake.csv_contract import ValidationSummary, validate_csv
-from qa_datalake.manifest import isoformat_utc, sha256_file, utc_now
+from qa_datalake.manifest import (
+    isoformat_utc,
+    manifest_filename,
+    manifest_json_bytes,
+    sha256_file,
+    utc_now,
+)
 
 
 class PipelineError(RuntimeError):
@@ -17,6 +23,7 @@ class PipelineError(RuntimeError):
 @dataclass(frozen=True)
 class PipelineResult:
     s3_uri: str
+    manifest_s3_uri: str
     raw_rows: int
     curated_rows: int
     validation: ValidationSummary
@@ -170,7 +177,7 @@ class AwsPipeline:
         finished_at = utc_now()
         duration_seconds = round(time.monotonic() - started_monotonic, 3)
         manifest = {
-            "pipeline_version": "0.3.0",
+            "pipeline_version": "0.4.0",
             "command": "ingest",
             "status": "success",
             "ingestion_date": partition,
@@ -187,9 +194,23 @@ class AwsPipeline:
             "finished_at": isoformat_utc(finished_at),
             "duration_seconds": duration_seconds,
         }
+        manifest_key = (
+            f"{self.settings.audit_prefix}/ingestion_date={partition}/"
+            f"{manifest_filename(manifest)}"
+        )
+        manifest_s3_uri = f"s3://{self.settings.bucket}/{manifest_key}"
+        manifest["manifest_s3_uri"] = manifest_s3_uri
+        self.s3.put_object(
+            Bucket=self.settings.bucket,
+            Key=manifest_key,
+            Body=manifest_json_bytes(manifest),
+            ContentType="application/json",
+            ServerSideEncryption="AES256",
+        )
 
         return PipelineResult(
             s3_uri=f"s3://{self.settings.bucket}/{key}",
+            manifest_s3_uri=manifest_s3_uri,
             raw_rows=raw_rows,
             curated_rows=curated_rows,
             validation=summary,

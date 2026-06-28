@@ -65,6 +65,8 @@
             "raw/dados_conformidade/*",
             "curated/dados_conformidade",
             "curated/dados_conformidade/*",
+            "audit/manifests",
+            "audit/manifests/*",
             "athena-results",
             "athena-results/*"
           ]
@@ -83,6 +85,7 @@
       "Resource": [
         "arn:aws:s3:::${BUCKET_NAME}/raw/dados_conformidade/*",
         "arn:aws:s3:::${BUCKET_NAME}/curated/dados_conformidade/*",
+        "arn:aws:s3:::${BUCKET_NAME}/audit/manifests/*",
         "arn:aws:s3:::${BUCKET_NAME}/athena-results/*"
       ]
     }

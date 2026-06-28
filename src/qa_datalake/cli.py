@@ -67,11 +67,16 @@ def _run() -> None:
 
     if args.command == "plan":
         key = f"{settings.raw_prefix}/ingestion_date={partition}/{args.csv.name}"
+        manifest_key = (
+            f"{settings.audit_prefix}/ingestion_date={partition}/"
+            "ingest_<timestamp>.json"
+        )
         print(
             json.dumps(
                 {
                     "validation": summary.to_dict(),
                     "s3_uri": f"s3://{settings.bucket}/{key}",
+                    "manifest_s3_uri_pattern": f"s3://{settings.bucket}/{manifest_key}",
                     "crawler": settings.crawler,
                     "workgroup": settings.workgroup,
                 },

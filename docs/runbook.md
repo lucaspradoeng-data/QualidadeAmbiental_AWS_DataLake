@@ -110,6 +110,12 @@ By default, a successful ingestion writes an operational manifest to:
 artifacts/manifests/
 ```
 
+The same manifest is also persisted in S3 under the audit prefix:
+
+```text
+s3://<bucket>/audit/manifests/ingestion_date=YYYY-MM-DD/ingest_*.json
+```
+
 To choose another local destination:
 
 ```bash
@@ -118,8 +124,20 @@ qa-datalake ingest data/output/dados_conformidade.csv --ingestion-date 2026-07-0
 
 The manifest records the ingestion date, source path, SHA256 checksum, S3 URI, validation
 summary, raw and curated counts, Athena query execution IDs, AWS caller identity, stage
-timings, start time, finish time, and total duration. Keep manifests out of Git because
-they are local execution evidence.
+timings, start time, finish time, total duration, and the cloud audit manifest URI. Keep local
+manifests out of Git because they are execution evidence, not source code.
+
+Validate the cloud audit manifest after a live run:
+
+```powershell
+aws s3api head-object `
+  --region us-east-1 `
+  --bucket "<bucket>" `
+  --key "audit/manifests/ingestion_date=2026-07-01/<manifest-file>.json" `
+  --profile qa-datalake-ingestion `
+  --query "{TamanhoBytes:ContentLength,Tipo:ContentType,Criptografia:ServerSideEncryption}" `
+  --output table
+```
 
 The pipeline fails closed when the raw or curated partition already exists. It does not
 overwrite a partition and does not offer a force flag for cloud writes.
@@ -150,6 +168,8 @@ partitions, and the curated table uses `MapredParquetInputFormat` with `ParquetH
 - Curated count mismatch: stop Power BI refresh and investigate before another ingestion.
 - Missing manifest: confirm the command finished successfully and that the local process has
   permission to write under `artifacts/manifests` or the directory passed by `--manifest-dir`.
+- Missing cloud audit manifest: confirm that `QA_AUDIT_PREFIX` is configured and that the
+  ingestion role can put objects under `audit/manifests/*`.
 
 ## Cost controls
 

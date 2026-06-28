@@ -13,6 +13,7 @@ class Settings:
     region: str
     bucket: str
     raw_prefix: str
+    audit_prefix: str
     crawler: str
     workgroup: str
     raw_database: str
@@ -33,6 +34,7 @@ class Settings:
             region=os.getenv("QA_AWS_REGION", "us-east-1"),
             bucket=bucket,
             raw_prefix=os.getenv("QA_RAW_PREFIX", "raw/dados_conformidade").strip("/"),
+            audit_prefix=os.getenv("QA_AUDIT_PREFIX", "audit/manifests").strip("/"),
             crawler=os.getenv(
                 "QA_GLUE_CRAWLER", "qa-dados-conformidade-raw-crawler"
             ),
